@@ -6,7 +6,7 @@ use "json"
 use "../packages/jsonpath"
 use "../packages/slack"
 
-actor Main
+actor AppleJack
   let _env: Env
   let _slackClient: SlackClient
   let _client: Client
@@ -15,8 +15,6 @@ actor Main
     _env = env
 
     _env.out.print("Applejack starting...")
-
-    SlackListener(_env, this)
 
     _slackClient = SlackClient(env)
 
@@ -107,3 +105,7 @@ actor Main
     else
       _env.out.print("Malformed URL: " + msg)
     end
+
+actor Main
+  new create(env: Env) =>
+    SlackListener(env, AppleJack(env))
