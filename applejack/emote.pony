@@ -88,25 +88,12 @@ actor Main
       if (( msg.find("happy")   > -1)) then
         getPony(msg)
       end
+    end
 
+    try
       if (( msg.find("sad")   > -1)) then
         getPony(msg)
       end
-
-        // or (msg.find("angry") > -1) 
-        // or (msg.find("sad") > -1)) then
-
-        // try
-        //   let s = "https://api.giphy.com/v1/gifs/translate?api_key=dc6zaTOxFJmzC&fmt=json&rating=y&s=" + msg + "%20pony"
-        //   let url = URL.build(s)
-        //   Fact(url.host.size() > 0)
-
-        //   let req = Payload.request("GET", url, recover this~apply() end)
-        //   _client(consume req)
-        // else
-        //   _env.out.print("Malformed URL: " + msg)
-        // end
-      // end
     end
 
   fun getPony(msg: String) =>
