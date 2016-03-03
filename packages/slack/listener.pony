@@ -93,6 +93,9 @@ actor SlackListener
       _env.out.print("Failed: " + request.method + " " + request.url.string())
     end
 
+  be subscribe(subscriber: SlackSubscriber tag) =>
+    _subscribers.push(subscriber)
+
 actor Main
   let _env: Env
 
