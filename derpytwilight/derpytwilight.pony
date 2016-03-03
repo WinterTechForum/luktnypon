@@ -2,7 +2,7 @@ use "collections"
 use "../packages/slack"
 use "../packages/encoders"
 
-actor Main
+actor DerpyTwilight
   var _env: Env
   var _name: String
   var _slackClient: SlackClient
@@ -12,7 +12,6 @@ actor Main
     _name = try env.args(1) else "Segmentation D Fault Esq" end
 
     _env = env
-    SlackListener(_env, this)
 
 
   be messageReceived(msg: String) =>
@@ -28,3 +27,6 @@ actor Main
       _slackClient.speak("TwilightSparkle", SoundEncoder.decode(msg.substring(8)))
     end
 
+actor Main
+  new create(env: Env) =>
+    SlackListener(env, DerpyTwilight(env))
