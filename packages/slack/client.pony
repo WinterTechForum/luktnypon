@@ -5,7 +5,7 @@ use "net/ssl"
 actor SlackClient
   let _env: Env
   let _client: Client
-  let _room: String
+  let _channel: String
   let _token: String
 
   new create(env: Env) =>
@@ -21,15 +21,15 @@ actor SlackClient
 
     _client = Client(consume sslctx)
 
-    _room = "%23luktnypon"
+    _channel = "C0PU3PR62" //"%23luktnypon"
     _token = "xoxp-16403402883-16552290308-23955244178-3e1b136b9e"
 
 
   be speak(name: String, message: String) =>
     let s = "https://slack.com/api/chat.postMessage" +
       "?token=" + _token +
-      "&pretty=1" + 
-      "&channel=" + _room +
+      "&pretty=1" +
+      "&channel=" + _channel +
       "&username=" + name +
       "&text=" + message
     try
