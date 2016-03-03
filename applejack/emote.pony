@@ -4,15 +4,21 @@ use "net/http"
 use "net/ssl"
 use "json"
 use "../packages/jsonpath"
+use "../packages/slack"
 
 actor Main
   let _env: Env
+  let _slackClient: SlackClient
   let _client: Client
 
   new create(env: Env) =>
     _env = env
 
     _env.out.print("Applejack starting...")
+
+    SlackListener(_env, this)
+
+    _slackClient = SlackClient(env)
 
     let sslctx = try
       recover
@@ -22,23 +28,10 @@ actor Main
       end
     end
 
-    _env.out.print("Applejack started.")
-
     _client = Client(consume sslctx)
 
-    for i in Range(1, env.args.size()) do
-      try
-        let s = "https://api.giphy.com/v1/gifs/translate?api_key=dc6zaTOxFJmzC&fmt=json&rating=y&s=" + env.args(i) + "%20pony"
-        let url = URL.build(s)
-        Fact(url.host.size() > 0)
-        _env.out.print("Gonna request " + s)
+    _env.out.print("Applejack started.")
 
-        let req = Payload.request("GET", url, recover this~apply() end)
-        _client(consume req)
-      else
-        try env.out.print("Malformed URL: " + env.args(i)) end
-      end
-    end
 
   be apply(request: Payload val, response: Payload val) =>
     _env.out.print("Got response")
@@ -80,23 +73,50 @@ actor Main
         let jp = JsonPath.obj("data").obj("bitly_gif_url")
         eu = jp.string(json)
       end
+        _slackClient.speak("AppleJack", eu)
 
-      let token = "xoxp-16403402883-16552290308-23955244178-3e1b136b9e"
-      let channel = "C0PU3PR62" //"%23luktnypon"
-      let name = "AppleJack"
-
-      try
-        let s = "https://slack.com/api/chat.postMessage?token=" + token +
-          "&username=" + name +
-          "&pretty=1" +
-          "&channel=" + channel +
-          "&text=" + eu
-        let url = URL.build(s)
-
-        let req = Payload.request("GET", url, recover this~apply2() end)
-        _client(consume req)
-      end
     end
 
   be apply2(request: Payload val, response: Payload val) =>
     None
+
+  be messageReceived(msg: String) => 
+
+    _env.out.print("Message received: " + msg)
+
+    try
+      if (( msg.find("happy")   > -1)) then
+        getPony(msg)
+      end
+
+      if (( msg.find("sad")   > -1)) then
+        getPony(msg)
+      end
+
+        // or (msg.find("angry") > -1) 
+        // or (msg.find("sad") > -1)) then
+
+        // try
+        //   let s = "https://api.giphy.com/v1/gifs/translate?api_key=dc6zaTOxFJmzC&fmt=json&rating=y&s=" + msg + "%20pony"
+        //   let url = URL.build(s)
+        //   Fact(url.host.size() > 0)
+
+        //   let req = Payload.request("GET", url, recover this~apply() end)
+        //   _client(consume req)
+        // else
+        //   _env.out.print("Malformed URL: " + msg)
+        // end
+      // end
+    end
+
+  fun getPony(msg: String) =>
+    try
+      let s = "https://api.giphy.com/v1/gifs/translate?api_key=dc6zaTOxFJmzC&fmt=json&rating=y&s=" + msg + "%20pony"
+      let url = URL.build(s)
+      Fact(url.host.size() > 0)
+
+      let req = Payload.request("GET", url, recover this~apply() end)
+      _client(consume req)
+    else
+      _env.out.print("Malformed URL: " + msg)
+    end
