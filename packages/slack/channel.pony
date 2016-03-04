@@ -3,12 +3,10 @@ use "net/http"
 use "net/ssl"
 
 actor SlackChannel
-  let _env: Env
   let _client: SlackClient
   let _channel: String
 
-  new create(env: Env, client: SlackClient) =>
-    _env = env
+  new create(client: SlackClient) =>
     _client = client
     _channel = "C0PU3PR62" //"%23luktnypon"
 
@@ -16,7 +14,7 @@ actor SlackChannel
     let tail = "&channel=" + _channel +
       "&username=" + name +
       "&text=" + message
-    _client.send(tail, recover this~apply() end)
+    _client.send("chat.postMessage", tail, recover this~apply() end)
 
   be apply(request: Payload val, response: Payload val) =>
     _client.print(request, response)

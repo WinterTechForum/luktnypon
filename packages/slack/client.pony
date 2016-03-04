@@ -21,8 +21,8 @@ actor SlackClient
     _client = Client(consume sslctx)
     _token = "xoxp-16403402883-16552290308-23955244178-3e1b136b9e"
 
-  be send(tail: String, handler: (ResponseHandler | None)) =>
-    let u = "https://slack.com/api/chat.postMessage" +
+  be send(endpoint: String, tail: String, handler: (ResponseHandler | None)) =>
+    let u = "https://slack.com/api/" + endpoint +
       "?token=" + _token + "&pretty=1" + tail
     _env.out.print("sending: " + u)
     try

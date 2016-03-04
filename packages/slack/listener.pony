@@ -42,7 +42,7 @@ actor SlackListener
   be poll() =>
     let ts: I64 = Time.seconds() - poll_period_seconds.i64()
     let tail = "&channel=" + _channel + "&oldest=" + ts.string()
-    _client.send(tail, recover this~handle_response() end)
+    _client.send("channels.history", tail, recover this~handle_response() end)
 
   fun catStrings(seqs: Array[ByteSeq] box): String =>
     var str = ""
