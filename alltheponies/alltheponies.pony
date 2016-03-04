@@ -20,13 +20,13 @@ actor Main
     let derpyTwilight: DerpyTwilight = DerpyTwilight(env)
     listener.subscribe(derpyTwilight)
 
-    // Rarity
-    let rarity: Rarity = Rarity(_client)
-    listener.subscribe(rarity)
-
     // Evil Rarity
     let evilRarity: EvilRarity = EvilRarity(_client)
     listener.subscribe(evilRarity)
+
+    // Rarity
+    let rarity: Rarity = Rarity(_client)
+    listener.subscribe(rarity)
 
   be messageReceived(msg: String) =>
     _env.out.print("Message received: " + msg)
