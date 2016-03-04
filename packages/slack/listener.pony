@@ -23,63 +23,49 @@ interface SlackSubscriber
 
 actor SlackListener
   let _env: Env
-  let _token: String
+  let _client: SlackClient
   let _channel: String
-  let _client: Client
-  var _subscribers: Array[SlackSubscriber tag]
+  let _subscribers: Array[SlackSubscriber tag]
 
   let poll_period_seconds: U64 = 2
 
-  new create(env: Env, subscriber: SlackSubscriber tag) =>
+  new create(env: Env, client: SlackClient, subscriber: SlackSubscriber tag) =>
     _env = env
-    _token = "xoxp-16403402883-20720597988-23963616497-5d589467a3"
+    _client = client
     _channel = "C0PU3PR62"
     _subscribers = [subscriber]
 
-    let sslctx = try
-      recover
-        SSLContext
-          .set_client_verify(true)
-          .set_authority("./cacert.pem")
-      end
-    end
-    _client = Client(consume sslctx)
-
     let timers = Timers
-
-    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1000000000, poll_period_seconds*1000000000) // 10 seconds
+    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, poll_period_seconds*1_000_000_000)
     timers(consume listener)
 
   be poll() =>
-    try
-      let ts: I64 = Time.seconds() - poll_period_seconds.i64()
-      let s = "https://slack.com/api/channels.history?token=" + _token + "&channel=" + _channel + "&oldest=" + ts.string() + "&pretty=1"
-      let url = URL.build(s)
-      Fact(url.host.size() > 0)
+    let ts: I64 = Time.seconds() - poll_period_seconds.i64()
+    let tail = "&channel=" + _channel + "&oldest=" + ts.string()
+    _client.send(tail, recover this~handle_response() end)
 
-      let req = Payload.request("GET", url, recover this~handleResponse() end)
-      _client(consume req)
-    else
-      _env.out.print("Malformed URL")
-    end
-
-  be handleResponse(request: Payload val, response: Payload val) =>
-    if response.status != 0 then
-      var message: String = ""
-
-      var jsonResponse = ""
-      for chunk in response.body().values() do
-        for i in Range(0, chunk.size()) do
-          try
-            let c = chunk(i)
-            let c2 = String.from_utf32(c.u32())
-            jsonResponse = jsonResponse + c2
-          end
+  fun catStrings(seqs: Array[ByteSeq] box): String =>
+    var str = ""
+    for seq in seqs.values() do
+      for i in Range(0, seq.size()) do
+        try
+          let b = seq(i)
+          let bs = String.from_utf32(b.u32())
+          str = str + bs
         end
       end
+    end
+    str
+
+  be handle_response(request: Payload val, response: Payload val) =>
+    _env.out.print("response")
+    if response.status != 0 then
+      let body = catStrings(response.body())
+      _env.out.print("response.body: " + body)
+      var message: String = ""
       let json: JsonDoc = JsonDoc
       try
-        json.parse(jsonResponse)
+        json.parse(body)
 
         let jp = JsonPath.obj("messages").arr(0).obj("text")
         message = jp.string(json)
@@ -101,7 +87,7 @@ actor Main
 
   new create(env: Env) =>
     _env = env
-    SlackListener(_env, this)
+    SlackListener(_env, SlackClient(_env), this)
 
   be messageReceived(msg: String) =>
     _env.out.print("Message received: " + msg)
