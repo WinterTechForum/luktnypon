@@ -6,26 +6,29 @@ use "../packages/slack"
 
 actor Main
   let _env: Env
-  let _client: SlackClient
 
   new create(env: Env) =>
     _env = env
-    _client = SlackClient(env)
+    let client = SlackClient(env)
 
     // Apple Jack
-    let appleJack: AppleJack = AppleJack(env)
-    let listener: SlackListener = SlackListener(env, appleJack)
+    let appleJack: AppleJack = AppleJack(env, client)
+    let listener: SlackListener = SlackListener(env, client, appleJack)
 
     // Derpy Twilight
-    let derpyTwilight: DerpyTwilight = DerpyTwilight(env)
+    let derpyTwilight: DerpyTwilight = DerpyTwilight(env, client)
     listener.subscribe(derpyTwilight)
 
     // Evil Rarity
-    let evilRarity: EvilRarity = EvilRarity(_client)
+    let evilRarity: EvilRarity = EvilRarity(client)
     listener.subscribe(evilRarity)
 
+    // Rainbow Dash
+    let rainbowDash: RainbowDash = RainbowDash(env, client)
+    listener.subscribe(rainbowDash)
+
     // Rarity
-    let rarity: Rarity = Rarity(_client)
+    let rarity: Rarity = Rarity(client)
     listener.subscribe(rarity)
 
   be messageReceived(msg: String) =>

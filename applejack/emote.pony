@@ -11,12 +11,12 @@ actor AppleJack
   let _slackClient: SlackClient
   let _client: Client
 
-  new create(env: Env) =>
+  new create(env: Env, slackClient: SlackClient) =>
     _env = env
 
     _env.out.print("Applejack starting...")
 
-    _slackClient = SlackClient(env)
+    _slackClient = slackClient
 
     let sslctx = try
       recover
@@ -71,7 +71,7 @@ actor AppleJack
         let jp = JsonPath.obj("data").obj("bitly_gif_url")
         eu = jp.string(json)
       end
-        _slackClient.speak("AppleJack", eu)
+        SlackChannel(_slackClient).speak("AppleJack", eu)
 
     end
 
@@ -108,4 +108,5 @@ actor AppleJack
 
 actor Main
   new create(env: Env) =>
-    SlackListener(env, AppleJack(env))
+    let slackClient = SlackClient(env)
+    SlackListener(env, slackClient, AppleJack(env, slackClient))

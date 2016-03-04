@@ -5,13 +5,13 @@ use "net/ssl"
 use "random"
 use "../packages/slack"
 
-actor Main
+actor RainbowDash
   let _env: Env
   let _client: SlackClient
 
-  new create(env: Env) =>
+  new create(env: Env, slackClient: SlackClient) =>
     _env = env
-    _client = SlackClient(_env)
+    _client = slackClient
     SlackListener(_env, _client, this)
 
   be messageReceived(msg: String) =>
@@ -34,8 +34,13 @@ actor Main
         _env.out.print("Going to dash: " + s)
 
         let name = "RainbowDash"
-        SlackChannel(_env, _client).speak(name, s)
+        SlackChannel(_client).speak(name, s)
       else
         _env.out.print("Bad dash!")
       end
     end
+
+actor Main
+  new create(env: Env) =>
+    let slackClient = SlackClient(env)
+    SlackListener(env, slackClient, RainbowDash(env, slackClient))

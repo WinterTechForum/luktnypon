@@ -8,7 +8,7 @@ actor Rarity
 
   be messageReceived(msg: String) =>
     if (msg.at("Pony say: ")) then
-      _client.speak("Rarity", msg.substring(10))
+      SlackChannel(_client).speak("Rarity", msg.substring(10))
     end
 
 actor EvilRarity
@@ -19,7 +19,7 @@ actor EvilRarity
 
   be messageReceived(msg: String) =>
     if (msg.at("Pony say: ")) then
-      _client.speak("Evil Rarity", "no")
+      SlackChannel(_client).speak("Evil Rarity", "Nope.")
     end
 
 actor Main
@@ -29,5 +29,5 @@ actor Main
     _client = SlackClient(env)
     let rarity: Rarity = Rarity(_client)
     let evilRarity: EvilRarity = EvilRarity(_client)
-    let listener: SlackListener = SlackListener(env, rarity)
+    let listener: SlackListener = SlackListener(env, _client, rarity)
     listener.subscribe(evilRarity)
