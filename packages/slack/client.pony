@@ -5,7 +5,6 @@ use "net/ssl"
 actor SlackClient
   let _env: Env
   let _client: Client
-  let _room: String
   let _token: String
 
   new create(env: Env) =>
@@ -20,30 +19,24 @@ actor SlackClient
     end
 
     _client = Client(consume sslctx)
-
-    _room = "%23luktnypon"
     _token = "xoxp-16403402883-16552290308-23955244178-3e1b136b9e"
 
-
-  be speak(name: String, message: String) =>
-    let s = "https://slack.com/api/chat.postMessage" +
-      "?token=" + _token +
-      "&pretty=1" + 
-      "&channel=" + _room +
-      "&username=" + name +
-      "&text=" + message
+  be send(tail: String, handler: (ResponseHandler | None)) =>
+    let u = "https://slack.com/api/chat.postMessage" +
+      "?token=" + _token + "&pretty=1" + tail
+    _env.out.print("sending: " + u)
     try
-        let url = URL.build(s)
-        Fact(url.host.size() > 0)
+      let url = URL.build(u)
+      Fact(url.host.size() > 0)
 
-        let req = Payload.request("GET", url, recover this~apply() end)
-        _client(consume req)
-      else
-        _env.out.print("Malformed URL: " + s)
-      end
+      let req = Payload.request("GET", url, handler)
+      _env.out.print("applying client")
+      _client(consume req)
+    else
+      _env.out.print("Malformed URL: " + u)
+    end
 
-
-  be apply(request: Payload val, response: Payload val) =>
+  be print(request: Payload val, response: Payload val) =>
     if response.status != 0 then
       // TODO: aggregate as a single print
       _env.out.print(
