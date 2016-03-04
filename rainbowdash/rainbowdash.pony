@@ -7,10 +7,12 @@ use "../packages/slack"
 
 actor Main
   let _env: Env
+  let _client: SlackClient
 
   new create(env: Env) =>
     _env = env
-    SlackListener(_env, this)
+    _client = SlackClient(_env)
+    SlackListener(_env, _client, this)
 
   be messageReceived(msg: String) =>
     _env.out.print("Message received: " + msg)
@@ -31,10 +33,8 @@ actor Main
         let s = sounds(i)
         _env.out.print("Going to dash: " + s)
 
-        let client = SlackClient(_env)
         let name = "RainbowDash"
-
-        client.speak(name, s)
+        SlackChannel(_env, _client).speak(name, s)
       else
         _env.out.print("Bad dash!")
       end

@@ -10,12 +10,24 @@ primitive Chuff
 primitive Groan
   fun apply(): String => "Groan"
   fun ord(): U8 => 3
+primitive Yoohoo
+  fun apply(): String => "Yoohoo"
+  fun ord(): U8 => 4
+primitive Snort
+  fun apply(): String => "Snort"
+  fun ord(): U8 => 5
+primitive Blow
+  fun apply(): String => "Blow"
+  fun ord(): U8 => 6
+primitive Sigh
+  fun apply(): String => "Sigh"
+  fun ord(): U8 => 7
 
-type NeighEntry is (Neigh | Whinny | Chuff | Groan)
+type NeighEntry is (Neigh | Whinny | Chuff | Groan | Yoohoo | Snort | Blow | Sigh)
 
 primitive NeighEntryList
   fun tag apply(): Array[NeighEntry] =>
-    [Neigh, Whinny, Chuff, Groan]
+    [Neigh, Whinny, Chuff, Groan, Yoohoo, Snort, Blow, Sigh]
   fun tag find(v: String): NeighEntry? =>
     for n in NeighEntryList().values() do
       if v == n() then
@@ -99,18 +111,33 @@ actor StringDecoder
   be write(b: U8) => append(b)
   be display(env: Env) => env.out.print("Result: "+getResult())
 
+class FilterBin
+  let offset: U8
+  let mask: U8
+  new create(o:U8, m:U8) =>
+    offset = o
+    mask = m
+
 primitive NeighEncoder
   fun encode(input: String, out: EncoderResult tag) =>
-    let da: Array[U8] = [0,2,4,6]
+    let bins: Array[FilterBin] = [
+      FilterBin(0,7),
+      FilterBin(3,7),
+      FilterBin(6,3)
+    ]
     for i in input.values() do
-      for d in da.values() do
-        let b:U8 = (i and (0x03 << d)) >> d
-        out.write(b)
+      for b in bins.values() do
+        let by:U8 = (i and (b.mask << b.offset)) >> b.offset
+        out.write(by)
       end
     end
 
   fun decode(input: String, out: EncoderResult tag) =>
-    let da: Array[U8] = [0,2,4,6]
+    let bins: Array[FilterBin] = [
+      FilterBin(0,7),
+      FilterBin(3,7),
+      FilterBin(6,3)
+    ]
     let listOfNeigh: Array[String] box = input.split("! \\")
     var b: U8 = 0
     var step: U64 = 0
@@ -118,14 +145,14 @@ primitive NeighEncoder
       if n.size() != 0 then
         try
           let c = NeighEntryList.find(n).ord()
-          b = b or (c << da(step))
+          b = b or (c << bins(step).offset)
           step = step + 1
         else
           for er in ("ERROR"+n).values() do
             out.write(er)
           end
         end
-        if (step == 4) then
+        if (step == bins.size()) then
           // We have a full U8 in b
           out.write(b)
           b = 0
