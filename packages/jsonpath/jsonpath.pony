@@ -3,18 +3,19 @@ use "collections"
 use "json"
 
 type JT is (F64 | I64 | Bool | None | String | JsonArray box | JsonObject box)
+type U is U64 // U64 for release, USize for head
 
 class JsonPath
-  let path: Array[(String | U64)]
+  let path: Array[(String | U)]
 
   new create() =>
-    path = Array[(String | U64)]
+    path = Array[(String | U)]
 
   fun ref obj(s: String): JsonPath ref =>
     path.push(s)
     this
 
-  fun ref arr(i: U64): JsonPath ref =>
+  fun ref arr(i: U): JsonPath ref =>
     path.push(i)
     this
 
@@ -25,7 +26,7 @@ class JsonPath
       | let k: String =>
         let jo = jt as JsonObject box
         jt = jo.data(k)
-      | let i: U64 =>
+      | let i: U =>
         let ja = jt as JsonArray box
         jt = ja.data(i)
       end
