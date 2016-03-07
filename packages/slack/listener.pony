@@ -26,22 +26,23 @@ actor SlackListener
   let _client: SlackClient
   let _channel: String
   let _subscribers: Array[SlackSubscriber tag]
+  let _timers: Timers
+  let _poll_period_seconds: U64 = 2
 
-  let poll_period_seconds: U64 = 2
+  var _oldestTs: String = Time.seconds().string()
 
   new create(env: Env, client: SlackClient, subscriber: SlackSubscriber tag) =>
     _env = env
     _client = client
     _channel = "C0PU3PR62"
     _subscribers = [subscriber]
+    _timers = Timers
 
-    let timers = Timers
-    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, poll_period_seconds*1_000_000_000)
-    timers(consume listener)
+    let listener = Timer(PollTimerNotify(this), _poll_period_seconds*1_000_000_000, 0)
+    _timers(consume listener)
 
   be poll() =>
-    let ts: I64 = Time.seconds() - poll_period_seconds.i64()
-    let tail = "&channel=" + _channel + "&oldest=" + ts.string()
+    let tail = "&channel=" + _channel + "&oldest=" + _oldestTs
     _client.send("channels.history", tail, recover this~handle_response() end)
 
   fun catStrings(seqs: Array[ByteSeq] box): String =>
@@ -62,14 +63,19 @@ actor SlackListener
     if response.status != 0 then
       let body = catStrings(response.body())
       _env.out.print("response.body: " + body)
-      var message: String = ""
       let json: JsonDoc = JsonDoc
-      try
-        json.parse(body)
+      let message: String =
+        try
+          json.parse(body)
 
-        let jp = JsonPath.obj("messages").arr(0).obj("text")
-        message = jp.string(json)
-      end
+          let tsJsonPath = JsonPath.obj("messages").arr(0).obj("ts")
+          _oldestTs = tsJsonPath.string(json)
+
+          let textJsonPath = JsonPath.obj("messages").arr(0).obj("text")
+          textJsonPath.string(json)
+        else
+          ""
+        end
       if (message.size() > 0) then
         for subscriber in _subscribers.values() do
           subscriber.messageReceived(message)
@@ -78,6 +84,9 @@ actor SlackListener
     else
       _env.out.print("Failed: " + request.method + " " + request.url.string())
     end
+
+    let listener = Timer(PollTimerNotify(this), _poll_period_seconds*1_000_000_000, 0)
+    _timers(consume listener)
 
   be subscribe(subscriber: SlackSubscriber tag) =>
     _subscribers.push(subscriber)
