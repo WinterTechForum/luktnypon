@@ -27,8 +27,9 @@ actor SlackListener
   let _channel: String
   let _subscribers: Array[SlackSubscriber tag]
   let _timers: Timers
+  let _poll_period_seconds: U64 = 2
 
-  let poll_period_seconds: U64 = 2
+  var _oldestTs: String = Time.seconds().string()
 
   new create(env: Env, client: SlackClient, subscriber: SlackSubscriber tag) =>
     _env = env
@@ -37,12 +38,11 @@ actor SlackListener
     _subscribers = [subscriber]
     _timers = Timers
 
-    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, 0)
+    let listener = Timer(PollTimerNotify(this), _poll_period_seconds*1_000_000_000, 0)
     _timers(consume listener)
 
   be poll() =>
-    let ts: I64 = Time.seconds() - poll_period_seconds.i64()
-    let tail = "&channel=" + _channel + "&oldest=" + ts.string()
+    let tail = "&channel=" + _channel + "&oldest=" + _oldestTs
     _client.send("channels.history", tail, recover this~handle_response() end)
 
   fun catStrings(seqs: Array[ByteSeq] box): String =>
@@ -68,8 +68,11 @@ actor SlackListener
         try
           json.parse(body)
 
-          let jp = JsonPath.obj("messages").arr(0).obj("text")
-          jp.string(json)
+          let tsJsonPath = JsonPath.obj("messages").arr(0).obj("ts")
+          _oldestTs = tsJsonPath.string(json)
+
+          let textJsonPath = JsonPath.obj("messages").arr(0).obj("text")
+          textJsonPath.string(json)
         else
           ""
         end
@@ -82,7 +85,7 @@ actor SlackListener
       _env.out.print("Failed: " + request.method + " " + request.url.string())
     end
 
-    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, 0)
+    let listener = Timer(PollTimerNotify(this), _poll_period_seconds*1_000_000_000, 0)
     _timers(consume listener)
 
   be subscribe(subscriber: SlackSubscriber tag) =>
