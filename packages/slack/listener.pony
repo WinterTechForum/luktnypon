@@ -26,6 +26,7 @@ actor SlackListener
   let _client: SlackClient
   let _channel: String
   let _subscribers: Array[SlackSubscriber tag]
+  let _timers: Timers
 
   let poll_period_seconds: U64 = 2
 
@@ -34,10 +35,10 @@ actor SlackListener
     _client = client
     _channel = "C0PU3PR62"
     _subscribers = [subscriber]
+    _timers = Timers
 
-    let timers = Timers
-    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, poll_period_seconds*1_000_000_000)
-    timers(consume listener)
+    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, 0)
+    _timers(consume listener)
 
   be poll() =>
     let ts: I64 = Time.seconds() - poll_period_seconds.i64()
@@ -62,14 +63,16 @@ actor SlackListener
     if response.status != 0 then
       let body = catStrings(response.body())
       _env.out.print("response.body: " + body)
-      var message: String = ""
       let json: JsonDoc = JsonDoc
-      try
-        json.parse(body)
+      let message: String =
+        try
+          json.parse(body)
 
-        let jp = JsonPath.obj("messages").arr(0).obj("text")
-        message = jp.string(json)
-      end
+          let jp = JsonPath.obj("messages").arr(0).obj("text")
+          jp.string(json)
+        else
+          ""
+        end
       if (message.size() > 0) then
         for subscriber in _subscribers.values() do
           subscriber.messageReceived(message)
@@ -78,6 +81,9 @@ actor SlackListener
     else
       _env.out.print("Failed: " + request.method + " " + request.url.string())
     end
+
+    let listener = Timer(PollTimerNotify(this), poll_period_seconds*1_000_000_000, 0)
+    _timers(consume listener)
 
   be subscribe(subscriber: SlackSubscriber tag) =>
     _subscribers.push(subscriber)
