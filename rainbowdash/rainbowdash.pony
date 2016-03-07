@@ -12,7 +12,6 @@ actor RainbowDash
   new create(env: Env, slackClient: SlackClient) =>
     _env = env
     _client = slackClient
-    SlackListener(_env, _client, this)
 
   be messageReceived(msg: String) =>
     _env.out.print("Message received: " + msg)
@@ -28,7 +27,7 @@ actor RainbowDash
     if msg.at("dash") then
       try
         let r = MT
-        let i = r.int(sounds.size())
+        let i = r.int(sounds.size().u64()).usize()
         _env.out.print("Going to dash at: " + i.string())
         let s = sounds(i)
         _env.out.print("Going to dash: " + s)

@@ -3,7 +3,7 @@ use "collections"
 use "json"
 
 type JT is (F64 | I64 | Bool | None | String | JsonArray box | JsonObject box)
-type U is U64 // U64 for release, USize for head
+type U is USize // U64 for release, USize for head
 
 class JsonPath
   let path: Array[(String | U)]

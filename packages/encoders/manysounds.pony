@@ -27,7 +27,7 @@ primitive ManySoundsList
 
 primitive SoundEncoder
   fun doEncode(b: U8): String => 
-    try ManySoundsList()(b.u64())() else "Barf" end
+    try ManySoundsList()(b.usize())() else "Barf" end
 
   fun encode(input: String): String =>
     var aggregator:String ref = recover String end
@@ -45,8 +45,8 @@ primitive SoundEncoder
     let da: Array[U8] = [0,2,4,6]
     let listOfNeigh: Array[String] box = input.split(" ")
     var b: U8 = 0
-    var step: U64 = 0
-    var length: I64 = 0
+    var step: USize = 0
+    var length: ISize = 0
     var aggregator: String ref = recover String end
     for n in listOfNeigh.values() do
       if n.size() != 0 then
