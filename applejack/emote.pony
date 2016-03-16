@@ -13,11 +13,9 @@ actor AppleJack
 
   new create(env: Env, slackClient: SlackClient) =>
     _env = env
-
-    _env.out.print("Applejack starting...")
-
     _slackClient = slackClient
 
+    _env.out.print("Applejack starting...")
     let sslctx = try
       recover
         SSLContext
@@ -27,12 +25,10 @@ actor AppleJack
     end
 
     _client = Client(consume sslctx)
-
     _env.out.print("Applejack started.")
 
-
   be apply(request: Payload val, response: Payload val) =>
-    _env.out.print("Got response")
+    _env.out.print("AppleJack got response")
     if response.status != 0 then
       // TODO: aggregate as a single print
       _env.out.print(
@@ -45,8 +41,7 @@ actor AppleJack
       end
 
       _env.out.print("")
-      _env.out.print("Here is the output from gliphy")
-      _env.out.print("")
+      _env.out.print("AppleJack's output from gliphy")
 
       var jsonResponse = ""
       for chunk in response.body().values() do
@@ -60,7 +55,7 @@ actor AppleJack
         end
       end
 
-      _env.out.print("Our jsonResponse: " + jsonResponse)
+      _env.out.print("AppleJack's jsonResponse: " + jsonResponse)
 
       var eu = ""
       let json: JsonDoc = JsonDoc
@@ -72,15 +67,13 @@ actor AppleJack
         eu = jp.string(json)
       end
         SlackChannel(_slackClient).speak("AppleJack", eu)
-
     end
 
   be apply2(request: Payload val, response: Payload val) =>
     None
 
-  be messageReceived(msg: String) => 
-
-    _env.out.print("Message received: " + msg)
+  be messageReceived(msg: String) =>
+    _env.out.print("AppleJack message received: " + msg)
 
     try
       if (( msg.find("happy")   > -1)) then
